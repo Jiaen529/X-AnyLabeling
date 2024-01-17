@@ -2,3 +2,4 @@
 build
 twine
 pyinstaller
+openai==0.27.2
