@@ -1127,45 +1127,52 @@ class Canvas(
             drawing_shape.add_point(self.line[1])
             drawing_shape.fill = True
             drawing_shape.paint(p)
-
+        #文字描述显示有问题
         # Draw texts
-        if self.show_texts:
-            p.setFont(
-                QtGui.QFont(
-                    "Arial", int(max(6.0, int(round(8.0 / Shape.scale))))
-                )
-            )
-            pen = QtGui.QPen(QtGui.QColor("#00FF00"), 8, Qt.SolidLine)
-            p.setPen(pen)
-            for shape in self.shapes:
-                description = shape.description
-                if description:
-                    bbox = shape.bounding_rect()
-                    fm = QtGui.QFontMetrics(p.font())
-                    rect = fm.boundingRect(description)
-                    p.fillRect(
-                        rect.x() + bbox.x(),
-                        rect.y() + bbox.y(),
-                        rect.width(),
-                        rect.height(),
-                        QtGui.QColor("#00FF00"),
-                    )
-                    p.drawText(
-                        bbox.x(),
-                        bbox.y(),
-                        description,
-                    )
-            pen = QtGui.QPen(QtGui.QColor("#000000"), 8, Qt.SolidLine)
-            p.setPen(pen)
-            for shape in self.shapes:
-                description = shape.description
-                if description:
-                    bbox = shape.bounding_rect()
-                    p.drawText(
-                        bbox.x(),
-                        bbox.y(),
-                        description,
-                    )
+        # if self.show_texts:
+        #     p.setFont(
+        #         QtGui.QFont(
+        #             "Arial", int(max(6.0, int(round(8.0 / Shape.scale))))
+        #         )
+        #     )
+        #     pen = QtGui.QPen(QtGui.QColor("#00FF00"), 8, Qt.SolidLine)
+        #     p.setPen(pen)
+        #     for shape in self.shapes:
+        #         description = shape.description
+        #         if description:
+        #             #文字描述不能太长,否则显示会有问题
+        #             if len(shape.description)>20:
+        #                 description=shape.description[0:20]      
+        #             bbox = shape.bounding_rect()
+        #             fm = QtGui.QFontMetrics(p.font())
+        #             rect = fm.boundingRect(description)
+        #             print(bbox,rect)
+        #             p.fillRect(
+        #                 rect.x() + bbox.x(),
+        #                 rect.y() + bbox.y(),
+        #                 rect.width(),
+        #                 rect.height(),
+        #                 QtGui.QColor("#00FF00"),
+        #             )
+        #             p.drawText(
+        #                 bbox.x(),
+        #                 bbox.y(),
+        #                 description,
+        #             )
+        #     pen = QtGui.QPen(QtGui.QColor("#000000"), 8, Qt.SolidLine)
+        #     p.setPen(pen)
+        #     for shape in self.shapes:
+        #         description = shape.description
+        #         if description:
+        #             #文字描述不能太长,否则显示会有问题
+        #             if len(shape.description)>20:
+        #                 description=shape.description[0:20]
+        #             bbox = shape.bounding_rect()
+        #             p.drawText(
+        #                 bbox.x(),
+        #                 bbox.y(),
+        #                 description,
+        #             )
 
         # Draw mouse coordinates
         if self.show_cross_line:

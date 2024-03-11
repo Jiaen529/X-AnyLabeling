@@ -59,7 +59,11 @@ file_dock:
   closable: false
   movable: false
   floatable: false
-
+gpt_dock:
+  show: true
+  closable: false
+  movable: false
+  floatable: true
 # label_dialog
 show_label_text_field: true
 label_completion: startswith

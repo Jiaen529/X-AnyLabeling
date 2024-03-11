@@ -11,6 +11,7 @@ import re
 import webbrowser
 from difflib import SequenceMatcher
 
+import openai
 import darkdetect
 import imgviz
 import natsort
@@ -29,6 +30,8 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QProgressDialog,
     QScrollArea,
+    QLineEdit,
+    QPushButton
 )
 
 from anylabeling.services.auto_labeling.types import AutoLabelingMode
@@ -1347,10 +1350,55 @@ class LabelingWidget(LabelDialog):
             "}"
         )
         self.shape_text_edit = QPlainTextEdit()
+        #添加gpt自动生成描述
+        self.gpt_dock = QtWidgets.QDockWidget(self.tr("GPT Text Generator"), self)
+        self.gpt_dock.setObjectName("GPT")
+        self.gpt_api_edit = QLineEdit()
+        self.gpt_api_edit.setPlaceholderText("Enter GPT API Endpoint")
+        self.gpt_token_edit = QLineEdit()
+        self.gpt_token_edit.setPlaceholderText("Enter GPT Token")
+        self.gpt_model_edit = QLineEdit()
+        self.gpt_model_edit.setPlaceholderText("Enter GPT Model Name")
+        self.gpt_role_edit = QLineEdit()
+        self.gpt_role_edit.setPlaceholderText("Enter GPT Role Description")
+        self.shape_prompt_edit = QLineEdit()
+        self.shape_prompt_edit.setPlaceholderText("Enter Shape Prompt")
+        # Creating a button for triggering text generation
+        self.text_generate_pb = QPushButton("Generate Text")
+
+        self.prev_image_pb = QPushButton("PreImage")
+        self.next_image_pb = QPushButton("NextImage")
+        h_layout = QHBoxLayout()
+        h_layout.addWidget(self.prev_image_pb)
+        h_layout.addWidget(self.text_generate_pb)
+        h_layout.addWidget(self.next_image_pb)
+
+        gpt_layout = QtWidgets.QVBoxLayout()
+        gpt_layout.setContentsMargins(0, 0, 0, 0)
+        gpt_layout.setSpacing(0)
+        gpt_layout.addWidget(self.gpt_api_edit)
+        gpt_layout.addWidget(self.gpt_token_edit)
+        gpt_layout.addWidget(self.gpt_model_edit)
+        gpt_layout.addWidget(self.gpt_role_edit)
+        gpt_layout.addWidget(self.shape_prompt_edit)
+        gpt_layout.addWidget(self.shape_text_edit)
+        gpt_layout.addLayout(h_layout)
+
+        #gpt_layout.addWidget(self.text_generate_pb)
+        
+        gpt_widget=QtWidgets.QWidget()
+        gpt_widget.setLayout(gpt_layout)
+        self.gpt_dock.setWidget(gpt_widget)
+        self.gpt_dock.setStyleSheet(dock_title_style)
+        self.text_generate_pb.clicked.connect(self.shape_text_generate)
+        self.prev_image_pb.clicked.connect(self.open_prev_image)
+        self.next_image_pb.clicked.connect(self.open_next_image)
+
         right_sidebar_layout.addWidget(
             self.shape_text_label, 0, Qt.AlignCenter
         )
-        right_sidebar_layout.addWidget(self.shape_text_edit)
+        #right_sidebar_layout.addWidget(self.shape_text_edit)
+        right_sidebar_layout.addWidget(self.gpt_dock)
         right_sidebar_layout.addWidget(self.flag_dock)
         right_sidebar_layout.addWidget(self.label_dock)
         right_sidebar_layout.addWidget(self.label_filter_combobox)
@@ -1375,7 +1423,7 @@ class LabelingWidget(LabelDialog):
         self.shape_dock.setFeatures(
             self.shape_dock.features() & rev_dock_features
         )
-
+        
         self.shape_text_edit.textChanged.connect(self.shape_text_changed)
 
         layout.addItem(right_sidebar_layout)
@@ -2430,7 +2478,46 @@ class LabelingWidget(LabelDialog):
         label_list_item.setText("{}".format(html.escape(text)))
         label_list_item.setBackground(QtGui.QColor(*color, LABEL_OPACITY))
         self.update_combo_box()
-
+    #GPT text Generator
+    def shape_text_generate(self):
+        api_key=self.gpt_token_edit.text().strip()
+        api_endpoint = self.gpt_api_edit.text().strip()
+        model_name=self.gpt_model_edit.text().strip()
+        gpt_role=self.gpt_role_edit.text().strip()
+        prompt = self.shape_prompt_edit.text().strip()
+        #需要加一个判断是否使用gpt4，多模态的
+        print(api_endpoint,api_key,model_name,gpt_role,prompt,self.filename)
+        if api_key is None:
+            openai.api_key="EMPTY"
+        if api_endpoint is None:
+            QMessageBox.warning(self,"GPT warning","api is empty!")
+            return
+        if model_name is None:
+            QMessageBox.warning(self,"GPT warning","model_name is empty!")
+            return
+        if gpt_role is None:
+            gpt_role="you are a wonderful assistant for user"
+        if prompt is None:
+            QMessageBox.warning(self,"GPT warning","prompt is empty!")
+            return
+        messages=[
+            {"role":"system","content":gpt_role},
+            {"role":"user","content":prompt}
+        ]
+        #如果使用gpt4V或其他多模态模型,openai版本需要更新,将图片一起打包即可，以下会有不同！
+        openai.api_key=api_key
+        openai.api_base=api_endpoint
+        try:
+            completion = openai.ChatCompletion.create(model=model_name,
+                                                    messages=messages,
+                                                    max_tokens=200)
+            text=str(completion.choices[0].message['content'])
+            self.set_text_editing(True)
+            self.shape_text_edit.setPlainText(text)
+        except Exception as e:
+            QMessageBox.warning(self,"GPT warning",f"Error: {str(e)}")
+        
+        
     def shape_text_changed(self):
         description = self.shape_text_edit.toPlainText()
         if self.canvas.current is not None:
